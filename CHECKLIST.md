@@ -10,7 +10,7 @@ Multi-serwisowa aplikacja uruchamiana przez Docker Compose. Projekt obejmuje bac
     | 80
     V
 [Nginx reverse proxy]
-    | /api/ -> backend:5000
+    | /api2/ -> backend:5000
     V
 [Backend Node.js + Express]
     | DB connection
@@ -24,7 +24,7 @@ Multi-serwisowa aplikacja uruchamiana przez Docker Compose. Projekt obejmuje bac
 ### Usługi i ich rola
 | Usługa | Rola | Ekspozycja | Uwagi |
 |---|---|---|---|
-| `nginx` | reverse proxy i host statycznego frontendu | `80:80` | przekierowuje `/api/` do backendu |
+| `nginx` | reverse proxy i host statycznego frontendu | `80:80` | przekierowuje `/api2/` do backendu |
 | `backend` | API Node.js/Express | `5000:5000` | endpointy `/health`, `/tasks`, `/tasks/:id` |
 | `tasks-db` | PostgreSQL | wewnętrznie | dane aplikacji |
 | `frontend` | build React + Nginx | wewnętrznie | pliki statyczne serwowane przez Nginx |
@@ -117,7 +117,7 @@ Oczekiwany wynik:
 
 ### 5.3 API przez proxy
 ```powershell
-curl.exe -i http://localhost/api/tasks
+curl.exe -i http://localhost/api2/tasks
 ```
 
 Oczekiwany wynik:
@@ -126,7 +126,7 @@ Oczekiwany wynik:
 
 Po uzyskaniu tokena możesz sprawdzić endpoint przez proxy z nagłówkiem Bearer:
 ```powershell
-curl.exe -i -H "Authorization: Bearer $token" http://localhost/api/tasks
+curl.exe -i -H "Authorization: Bearer $token" http://localhost/api2/tasks
 ```
 
 ### 5.4 Pozyskaj token Bearer z Keycloak
@@ -136,7 +136,7 @@ Token ma krótką ważność (domyślnie 300s). Poniżej działające przykłady
 
 ```powershell
 # Pobierz i sparsuj token (jedna linia curl, potem ConvertFrom-Json)
-$response = curl.exe -s -X POST "http://localhost:8080/realms/task-app-realm/protocol/openid-connect/token" -H "Content-Type: application/x-www-form-urlencoded" -d "grant_type=password&client_id=task-app-frontend&username=adminUser&password=pass123"
+$response = curl.exe -s -X POST "http://localhost:8080/realms/task-app-realm/protocol/openid-connect/token" -H "Content-Type: application/x-www-form-urlencoded" -d "grant_type=password&client_id=task-app-frontend&username=demo&password=demo123"
 $token = ($response | ConvertFrom-Json).access_token
 Write-Host "Token length: $($token.Length)"
 ```
@@ -144,7 +144,7 @@ Write-Host "Token length: $($token.Length)"
 - Bash (np. WSL, Git Bash, Linux):
 
 ```bash
-TOKEN=$(curl -s -X POST "http://localhost:8080/realms/task-app-realm/protocol/openid-connect/token" -H "Content-Type: application/x-www-form-urlencoded" -d "grant_type=password&client_id=task-app-frontend&username=adminUser&password=pass123" | jq -r .access_token)
+TOKEN=$(curl -s -X POST "http://localhost:8080/realms/task-app-realm/protocol/openid-connect/token" -H "Content-Type: application/x-www-form-urlencoded" -d "grant_type=password&client_id=task-app-frontend&username=demo&password=demo123" | jq -r .access_token)
 echo "Token length: ${#TOKEN}"
 ```
 
@@ -225,7 +225,7 @@ docker network ls
 ## 7. Potwierdzone wyniki projektu
 - `docker compose ps` pokazuje wszystkie przynajmniej kluczowe usługi jako `healthy`.
 - `/health` backendu zwraca `UP` i informację o połączeniu z bazą.
-- reverse proxy Nginx zwraca stronę frontendu i zwraca `401 Unauthorized` dla `/api/tasks` bez tokena.
+- reverse proxy Nginx zwraca stronę frontendu i zwraca `401 Unauthorized` dla `/api2/tasks` bez tokena.
 - tworzenie zadania przez API działa po autoryzacji.
 - Keycloak odpowiada na readiness endpoint `/health/ready`.
 - `frontend/.dockerignore` został dodany, aby ograniczyć kontekst builda.

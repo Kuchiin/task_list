@@ -18,7 +18,7 @@ const apiMeta = import.meta as unknown as {
     VITE_KEYCLOAK_CLIENT_ID?: string;
   };
 };
-const API_BASE_URL = apiMeta.env?.VITE_API_BASE_URL || '/api';
+const API_BASE_URL = apiMeta.env?.VITE_API_BASE_URL || '/api2';
 const KEYCLOAK_URL = apiMeta.env?.VITE_KEYCLOAK_URL || 'http://localhost:8080';
 const KEYCLOAK_REALM = apiMeta.env?.VITE_KEYCLOAK_REALM || 'task-app-realm';
 const KEYCLOAK_CLIENT_ID = apiMeta.env?.VITE_KEYCLOAK_CLIENT_ID || 'task-app-frontend';
@@ -73,6 +73,7 @@ async function getAuthConfig(token?: string) {
 
 function App() {
   const [initialized, setInitialized] = useState<boolean>(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTaskTitle, setNewTaskTitle] = useState<string>('');
   const [newTaskDescription, setNewTaskDescription] = useState<string>('');
@@ -112,10 +113,17 @@ function App() {
 
   useEffect(() => {
     isMounted.current = true;
+    const timeout = window.setTimeout(() => {
+      if (!initialized && isMounted.current) {
+        setAuthError('Keycloak could not be reached. Check that the Docker services are running and reload the page.');
+      }
+    }, 10000);
+
     return () => {
       isMounted.current = false;
+      window.clearTimeout(timeout);
     };
-  }, []);
+  }, [initialized]);
 
   const onKeycloakEvent = (event: string) => {
     console.log('Keycloak Event:', event, {
@@ -237,7 +245,16 @@ function App() {
     >
       <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif', maxWidth: '900px', margin: '0 auto' }}>
         <h1>Task Management App</h1>
-        {!initialized && <p>Loading Keycloak...</p>}
+        {!initialized && !authError && <p>Connecting to secure sign-in…</p>}
+        {authError && (
+          <div style={{ marginTop: '20px', padding: '16px', borderRadius: '8px', backgroundColor: '#fff3cd', color: '#664d03' }}>
+            <strong>Authentication is unavailable.</strong>
+            <p>{authError}</p>
+            <button onClick={() => window.location.reload()} style={{ padding: '8px 14px' }}>
+              Retry
+            </button>
+          </div>
+        )}
         {initialized && (
           <div>
             {!keycloak.authenticated ? (
@@ -254,16 +271,18 @@ function App() {
                   Logout
                 </button>
 
-                <section style={{ marginTop: '24px', border: '1px solid #b98b00', borderRadius: '8px', padding: '16px', backgroundColor: '#000000' }}>
-                  <h2 style={{ marginTop: 0 }}>Panel administratora</h2>
-                  <button
-                    onClick={() => void fetchAdminMessage()}
-                    style={{ padding: '10px 15px', backgroundColor: '#b98b00', color: '#212529', border: 'none', fontSize: '16px', cursor: 'pointer' }}
-                  >
-                    Sprawdź, czy jesteś adminem
-                  </button>
-                  {adminMessage && <p style={{ marginTop: '12px', fontWeight: 700 }}>{adminMessage}</p>}
-                </section>
+                {userHasRole('admin') && (
+                  <section style={{ marginTop: '24px', border: '1px solid #b98b00', borderRadius: '8px', padding: '16px', backgroundColor: '#000000' }}>
+                    <h2 style={{ marginTop: 0 }}>Panel administratora</h2>
+                    <button
+                      onClick={() => void fetchAdminMessage()}
+                      style={{ padding: '10px 15px', backgroundColor: '#b98b00', color: '#212529', border: 'none', fontSize: '16px', cursor: 'pointer' }}
+                    >
+                      Sprawdź, czy jesteś adminem
+                    </button>
+                    {adminMessage && <p style={{ marginTop: '12px', fontWeight: 700 }}>{adminMessage}</p>}
+                  </section>
+                )}
 
                 <section style={{ marginTop: '24px', border: '1px solid #ddd', borderRadius: '8px', padding: '16px', backgroundColor: '#fafafa' }}>
                   <h2 style={{ marginTop: 0 }}>Dodaj nowe zadanie</h2>

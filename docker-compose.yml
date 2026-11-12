@@ -2,7 +2,7 @@ services:
   keycloak:
     container_name: keycloak-1
     image: quay.io/keycloak/keycloak:23.0.7
-    command: start-dev
+    command: start-dev --import-realm
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
@@ -28,6 +28,7 @@ services:
 
     volumes:
       - keycloak-data:/opt/keycloak/data
+      - ./keycloak/import:/opt/keycloak/data/import:ro
 
     networks:
       - internal-net
@@ -128,6 +129,8 @@ services:
       APP_DB_PORT: ${APP_DB_PORT}
       PORT: 5000
       KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_INTERNAL_URL: http://keycloak:8080
+      KEYCLOAK_PUBLIC_URL: http://localhost:8080
       KEYCLOAK_REALM: task-app-realm
       KEYCLOAK_AUDIENCE: task-app-frontend
 
@@ -166,7 +169,7 @@ services:
     build: ./frontend
 
     environment:
-      VITE_API_BASE_URL: http://localhost:5000
+      VITE_API_BASE_URL: /api2
       VITE_KEYCLOAK_URL: http://localhost:8080
       VITE_KEYCLOAK_REALM: task-app-realm
       VITE_KEYCLOAK_CLIENT_ID: task-app-frontend

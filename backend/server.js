@@ -32,7 +32,7 @@ app.use(cors()); // Włączamy CORS dla wszystkich domen na potrzeby development
 app.use(express.json()); // Do parsowania JSON z requestów
 
 app.use((req, res, next) => {
-  console.log('Incoming request', req.method, req.url, 'Authorization:', req.headers.authorization);
+  console.log('Incoming request', req.method, req.url, 'Authorization:', req.headers.authorization ? 'present' : 'absent');
   next();
 });
 
